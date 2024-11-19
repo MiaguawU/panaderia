@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); 
 const mysql = require('mysql2');
 const cors = require('cors');
 
@@ -10,10 +10,9 @@ const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: 'ch0pp3r',
-    database: 'panaderia'
+    database: 'panaderia',
 });
 
-// Obtener todos los productos con la información de temporada
 app.get('/api/producto', (req, res) => {
     const sql = `
         SELECT 
@@ -23,11 +22,9 @@ app.get('/api/producto', (req, res) => {
             Producto.descripcion,
             Producto.piezas, 
             Producto.imagen_url, 
-            Temporada.temporada AS temporada,
-            Temporada.fecha_inicio, 
-            Temporada.fecha_termino
+            Temporada.temporada AS temporada
         FROM Producto
-        LEFT JOIN Temporada ON Producto.id_temporada = Temporada.id_temporada
+        LEFT JOIN Temporada ON Producto.id_temporada = Temporada.id_temporada;
     `;
     db.query(sql, (err, results) => {
         if (err) {
@@ -38,18 +35,21 @@ app.get('/api/producto', (req, res) => {
     });
 });
 
-app.get('/api/temporada', (req, res) => {
-    const sql = `
-        SELECT 
-            Temporada.id_temporada, 
-            Temporada.temporada, 
-            Temporada.fecha_inicio, 
-            Temporada.fecha_termino
-        FROM Temporada
-    `;
+app.get('/api/temporadas', (req, res) => {
+    const { simple } = req.query; 
+    const sql = simple
+        ? `SELECT id_temporada, temporada FROM Temporada`
+        : `
+            SELECT 
+                id_temporada, 
+                temporada, 
+                fecha_inicio, 
+                fecha_termino 
+            FROM Temporada
+        `;
     db.query(sql, (err, results) => {
         if (err) {
-            console.error(err);
+            console.error('Error al obtener las temporadas:', err);
             return res.status(500).send('Error al obtener las temporadas.');
         }
         res.json(results);
@@ -58,12 +58,10 @@ app.get('/api/temporada', (req, res) => {
 
 app.post('/api/agregar', (req, res) => {
     const { nombre_producto, precio, descripcion, piezas, imagen_url, id_temporada } = req.body;
-
     const sql = `
         INSERT INTO Producto (nombre_producto, precio, descripcion, piezas, imagen_url, id_temporada)
         VALUES (?, ?, ?, ?, ?, ?)
     `;
-
     db.query(sql, [nombre_producto, precio, descripcion, piezas, imagen_url, id_temporada], (err, results) => {
         if (err) {
             console.error(err);
@@ -75,11 +73,7 @@ app.post('/api/agregar', (req, res) => {
 
 app.delete('/api/eliminar/:id', (req, res) => {
     const { id } = req.params;
-
-    const sql = `
-        DELETE FROM Producto WHERE id_producto = ?
-    `;
-
+    const sql = `DELETE FROM Producto WHERE id_producto = ?`;
     db.query(sql, [id], (err, results) => {
         if (err) {
             console.error(err);
@@ -95,7 +89,6 @@ app.delete('/api/eliminar/:id', (req, res) => {
 app.put('/api/actualizar/:id', (req, res) => {
     const { id } = req.params;
     const { nombre_producto, precio, descripcion, piezas, imagen_url, id_temporada } = req.body;
-
     const sql = `
         UPDATE Producto
         SET 
@@ -107,7 +100,6 @@ app.put('/api/actualizar/:id', (req, res) => {
             id_temporada = ?
         WHERE id_producto = ?
     `;
-
     db.query(
         sql,
         [nombre_producto, precio, descripcion, piezas, imagen_url, id_temporada, id],
