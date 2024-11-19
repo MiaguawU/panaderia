@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Form, Input, InputNumber, Button, notification, Typography } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, InputNumber, Button, notification, Typography, Select } from 'antd';
 
 const { Title } = Typography;
+const { Option } = Select;
 
 const Actualizar = () => {
     const [formData, setFormData] = useState({
@@ -13,6 +14,27 @@ const Actualizar = () => {
         imagen_url: '',
         id_temporada: '',
     });
+
+    const [temporadas, setTemporadas] = useState([]);
+
+    // Cargar temporadas desde el servidor
+    useEffect(() => {
+        const fetchTemporadas = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/temporadas');
+                const data = await response.json();
+                setTemporadas(data);
+            } catch (error) {
+                console.error('Error al cargar las temporadas:', error);
+                notification.error({
+                    message: 'Error',
+                    description: 'No se pudieron cargar las temporadas.',
+                });
+            }
+        };
+
+        fetchTemporadas();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -138,16 +160,21 @@ const Actualizar = () => {
                 </Form.Item>
 
                 <Form.Item
-                    label="ID de la Temporada"
+                    label="Temporada"
                     name="id_temporada"
+                    rules={[{ required: true, message: 'Por favor seleccione una temporada!' }]}
                 >
-                    <InputNumber
-                        min={1}
-                        placeholder="ID de la temporada"
+                    <Select
+                        placeholder="Seleccione una temporada"
                         value={formData.id_temporada}
                         onChange={(value) => setFormData({ ...formData, id_temporada: value })}
-                        style={{ width: '100%' }}
-                    />
+                    >
+                        {temporadas.map((temporada) => (
+                            <Option key={temporada.id_temporada} value={temporada.id_temporada}>
+                                {temporada.temporada}
+                            </Option>
+                        ))}
+                    </Select>
                 </Form.Item>
 
                 <Form.Item>

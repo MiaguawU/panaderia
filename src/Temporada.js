@@ -7,7 +7,7 @@ const Temporadas = () => {
     const [temporadas, setTemporadas] = useState([]);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/temporada')
+        fetch('http://localhost:5000/api/temporadas')
             .then((response) => response.json())
             .then((data) => setTemporadas(data))
             .catch((error) => {
