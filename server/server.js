@@ -116,5 +116,5 @@ app.put('/api/actualizar/:id', (req, res) => {
     );
 });
 
-const PORT = 5000;
+const PORT = 10000;
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
