@@ -1,47 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import {
-  ConfigProvider,
-  Card,
-  Typography,
-  Button,
-  Space,
-  Modal,
-  InputNumber,
-  Popconfirm,
-  message
-} from 'antd';
-import { ShoppingCartOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { ConfigProvider, Card, Typography, Button, Space, Modal, InputNumber, message } from 'antd';
+import { ShoppingCartOutlined } from '@ant-design/icons';
+import axios from 'axios';
 import PUERTO from './Config';
-import AgregarModal from './Agregar';
-import ActualizarModal from './Actualizar';
 
 const { Title, Paragraph } = Typography;
 
-const ProductosConEditarEliminar = () => {
+const ProductosCliente = () => {
   const [productos, setProductos] = useState([]);
   const [carritoVisible, setCarritoVisible] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidad, setCantidad] = useState(1);
-  const [isAgregarVisible, setAgregarVisible] = useState(false);
-  const [isActualizarVisible, setActualizarVisible] = useState(false);
 
   useEffect(() => {
+    const fetchProductos = async () => {
+      try {
+        const response = await axios.get(`${PUERTO}/productos`);
+        setProductos(response.data);
+      } catch (error) {
+        console.error('Error al obtener los productos:', error);
+        message.error('Error al cargar los productos.');
+      }
+    };
     fetchProductos();
   }, []);
 
-  const fetchProductos = async () => {
-    try {
-      const response = await fetch(`${PUERTO}/productos`);
-      const data = await response.json();
-      setProductos(data);
-    } catch (error) {
-      console.error('Error al obtener los productos:', error);
-    }
-  };
-
   const agregarAlCarrito = (producto) => {
     setProductoSeleccionado(producto);
-    setCantidad(1);
+    setCantidad(1); // Resetear cantidad
     setCarritoVisible(true);
   };
 
@@ -50,31 +36,38 @@ const ProductosConEditarEliminar = () => {
     setProductoSeleccionado(null);
   };
 
-  const abrirModalActualizar = (producto) => {
-    setProductoSeleccionado(producto.id_producto);
-    setActualizarVisible(true);
-  };
-
-  const eliminarProducto = async (id_producto) => {
-    try {
-      const response = await fetch(`${PUERTO}/productos/${id_producto}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        message.success('Producto eliminado con éxito');
-        fetchProductos();
-      } else {
-        message.error('Error al eliminar el producto');
-      }
-    } catch (error) {
-      console.error('Error al eliminar el producto:', error);
-      message.error('Error al eliminar el producto');
-    }
-  };
-
   const calcularTotal = () => {
     if (!productoSeleccionado) return 0;
     return productoSeleccionado.precio * cantidad;
+  };
+
+  const enviar = async () => {
+    if (!productoSeleccionado) return;
+    const currentUserId = localStorage.getItem('currentUser');
+      if (!currentUserId) {
+        message.warning('No hay un usuario logueado actualmente.');
+        return null;
+      }
+      const response = await axios.get(`${PUERTO}/carros/${currentUserId}`);
+      const id_carrito = response.data.map((carrito) => carrito.id_carrito);
+      const Carrito = id_carrito[0];
+
+    try {
+
+      const data = {
+        id_car: Carrito,
+        id_pro: productoSeleccionado.id_producto,
+        cantidad: cantidad,
+      };
+
+      await axios.post(`${PUERTO}/proCar`, data);
+
+      message.success('Producto agregado al carrito.');
+      cerrarModal();
+    } catch (error) {
+      console.error('Error al agregar al carrito:', error);
+      message.error('No se pudo agregar el producto al carrito.');
+    }
   };
 
   return (
@@ -107,11 +100,6 @@ const ProductosConEditarEliminar = () => {
         >
           Productos
         </Title>
-        <Space style={{ marginBottom: '20px' }}>
-          <Button type="primary" onClick={() => setAgregarVisible(true)}>
-            Agregar Producto
-          </Button>
-        </Space>
         <div
           style={{
             display: 'flex',
@@ -158,25 +146,6 @@ const ProductosConEditarEliminar = () => {
                   </div>
                 )
               }
-              actions={[
-                <Button
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => abrirModalActualizar(producto)}
-                >
-                  Editar
-                </Button>,
-                <Popconfirm
-                  title="¿Estás seguro de eliminar este producto?"
-                  onConfirm={() => eliminarProducto(producto.id_producto)}
-                  okText="Sí"
-                  cancelText="No"
-                >
-                  <Button type="text" danger icon={<DeleteOutlined />}>
-                    Eliminar
-                  </Button>
-                </Popconfirm>,
-              ]}
             >
               <Title level={4} style={{ marginBottom: '8px', color: '#333' }}>
                 {producto.nombre_producto}
@@ -193,26 +162,55 @@ const ProductosConEditarEliminar = () => {
               <Paragraph style={{ marginBottom: '16px', color: '#333' }}>
                 Temporada: <strong>{producto.temporada}</strong>
               </Paragraph>
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<ShoppingCartOutlined />}
+                  onClick={() => agregarAlCarrito(producto)}
+                >
+                  Agregar al Carrito
+                </Button>
+              </Space>
             </Card>
           ))}
         </div>
 
-        <AgregarModal
-          isVisible={isAgregarVisible}
-          onClose={() => setAgregarVisible(false)}
-          onProductoAgregado={fetchProductos}
-        />
-
-<ActualizarModal
-  isVisible={isActualizarVisible}
-  onClose={() => setActualizarVisible(false)}
-  onProductoActualizado={fetchProductos}
-  id_producto={productoSeleccionado}
-/>
-
+        {/* Modal para el carrito */}
+        <Modal
+          title="Producto Agregado al Carrito"
+          open={carritoVisible}
+          onCancel={cerrarModal}
+          footer={[
+            <Button key="guardar" type="primary" onClick={enviar}>
+              Guardar
+            </Button>,
+          ]}
+        >
+          {productoSeleccionado && (
+            <>
+              <Title level={4}>{productoSeleccionado.nombre_producto}</Title>
+              <Paragraph>
+                <strong>Precio Unitario:</strong> ${productoSeleccionado.precio.toFixed(2)}
+              </Paragraph>
+              <Paragraph>
+                <strong>Cantidad:</strong>
+                <InputNumber
+                  min={1}
+                  max={productoSeleccionado.piezas}
+                  value={cantidad}
+                  onChange={(value) => setCantidad(value)}
+                  style={{ marginLeft: '10px' }}
+                />
+              </Paragraph>
+              <Paragraph>
+                <strong>Total:</strong> ${calcularTotal().toFixed(2)}
+              </Paragraph>
+            </>
+          )}
+        </Modal>
       </div>
     </ConfigProvider>
   );
 };
 
-export default ProductosConEditarEliminar;
+export default ProductosCliente;

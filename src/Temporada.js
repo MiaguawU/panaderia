@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Typography, Space, notification } from 'antd';
+import PUERTO from './Config';
 
 const { Title } = Typography;
 
@@ -7,7 +8,7 @@ const Temporadas = () => {
     const [temporadas, setTemporadas] = useState([]);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/temporadas')
+        fetch(`${PUERTO}/temporadas`)
             .then((response) => response.json())
             .then((data) => setTemporadas(data))
             .catch((error) => {
