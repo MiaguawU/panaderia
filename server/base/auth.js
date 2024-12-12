@@ -7,7 +7,7 @@ passport.use(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.SESSION_SECRET,
-      callbackURL: `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/auth/google/callback`,
+      callbackURL: `${process.env.FRONTEND_URL || "http://localhost:5000"}/auth/google/callback`,
     },
     (accessToken, refreshToken, profile, done) => {
       const email = profile.emails[0].value;
