@@ -1,7 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
-const RedisStore = require("connect-redis"); // Sin ".default"
+const RedisStore = require("connect-redis").default; // Asegúrate de usar `.default` para la versión 8.x
 const Redis = require("ioredis");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
@@ -40,9 +40,9 @@ const storage = multer.diskStorage({
 
 // Configuración de Redis
 const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || null,
+  host: process.env.DB_HOST,
+  port: process.env.PORT || 6379,
+  password: process.env.DB_PASSWORD || null,
 });
 
 redisClient.on("connect", () => {
@@ -63,11 +63,13 @@ app.use(morgan("dev"));
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
 // Configuración de sesiones con Redis
+const redisStore = new RedisStore({
+  client: redisClient,
+});
+
 app.use(
   session({
-    store: new RedisStore({
-      client: redisClient, // Reutiliza tu cliente de Redis
-    }),
+    store: redisStore,
     secret: process.env.SESSION_SECRET || "defaultSecret", // Cambiar por una clave segura
     resave: false,
     saveUninitialized: false,
