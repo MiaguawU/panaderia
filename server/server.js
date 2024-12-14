@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
+const RedisStore = require("connect-redis").default;
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
 const loginRouter = require("./base/login");
@@ -36,6 +37,12 @@ const storage = multer.diskStorage({
   },
 });
 
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST, // Asegúrate de configurar esta variable en Render
+  port: process.env.REDIS_PORT, // Generalmente 6379
+  password: process.env.REDIS_PASSWORD, // Si tienes contraseña configurada
+});
+
 // Inicialización del servidor
 const app = express();
 app.use(cors());
@@ -48,7 +55,8 @@ app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 // Configuración de sesiones
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "default_secret",
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET, // Mantenlo en las variables de entorno
     resave: false,
     saveUninitialized: false,
   })
@@ -101,10 +109,10 @@ app.get(
       });
 
       // Redirigir al frontend con los datos
-      res.redirect(`${REACT_APP_API_URL}/dashboard?${queryParams}`);
+      res.redirect(`${BASE_URL}/dashboard?${queryParams}`);
     } catch (error) {
       console.error("Error durante el callback de Google:", error);
-      res.redirect(`${REACT_APP_API_URL}/error?message=Error durante la autenticación`);
+      res.redirect(`${BASE_URL}/error?message=Error durante la autenticación`);
     }
   }
 );
@@ -126,5 +134,5 @@ app.disable("etag");
 
 const PORT1 = process.env.PORT ;
 app.listen(PORT1, () =>
-  console.log(`Servidor corriendo en http://localhost:${PORT}`)
+  console.log(`Servidor corriendo en http://localhost:${PORT1}`)
 );
