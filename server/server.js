@@ -1,48 +1,46 @@
 const express = require("express");
 const session = require("express-session");
-const multer = require("multer");
+const MySQLStore = require("express-mysql-session")(session);
+const dotenv = require("dotenv");
+const cors = require("cors");
+const morgan = require("morgan");
+const path = require("path");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
 const loginRouter = require("./base/login");
 const logoutRouter = require("./base/logout");
-const morgan = require("morgan");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const path = require("path");
 const call = require("./base/manejo");
 const routerSave = require("./base/Save");
-const carrito = require("./base/carritos");
-const compras = require("./base/compras");
-const productos = require("./base/productos");
 const cliente = require("./base/cliente");
-const temporada = require("./base/temporada");
 const roles = require("./base/roles");
+const productos = require("./base/productos");
+const temporada = require("./base/temporada");
 const carros = require("./base/carritos");
 const produCar = require("./base/carrito_producto");
+const compras = require("./base/compras");
 
-// Carga las variables de entorno
+// Cargar variables de entorno
 dotenv.config();
 
-// Configuración de multer para manejar archivos
-const upload = multer({
-  storage: multer.memoryStorage(),
-}).any();
+// Configuración de conexión a MySQL
+const dbOptions = {
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+};
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "imagenes")); // Ruta para guardar imágenes
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
+// Inicializa MySQLStore
+const sessionStore = new MySQLStore(dbOptions);
 
-// Inicialización del servidor Express
+// Inicializa el servidor Express
 const app = express();
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL, // Permitir solicitudes desde el frontend
-    credentials: true, // Habilitar envío de cookies
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -50,15 +48,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
-// Configuración de sesiones en memoria
+// Configuración de sesiones con MySQLStore
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "defaultSecret",
     resave: false,
     saveUninitialized: false,
+    store: sessionStore, // Almacenamiento de sesiones en MySQL
     cookie: {
-      secure: process.env.NODE_ENV === "production", // Cookies seguras en producción
-      httpOnly: true, // Protege contra ataques XSS
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 1 día
     },
   })
@@ -80,44 +79,6 @@ app.use("/temporada", temporada);
 app.use("/carros", carros);
 app.use("/proCar", produCar);
 app.use("/compras", compras);
-
-// Ruta de autenticación con Google
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
-const BASE_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    try {
-      const user = {
-        id: req.user.id_usuario,
-        username: req.user.nombre_usuario,
-        email: req.user.correo,
-        imagen: req.user.imagen,
-        fondos: req.user.fondos || 0,
-      };
-
-      const queryParams = new URLSearchParams({
-        id: user.id.toString(),
-        username: user.username,
-        email: user.email,
-        imagen: user.imagen,
-        fondos: user.fondos.toString(),
-        message: "Sesión iniciada con éxito",
-      });
-
-      res.redirect(`${BASE_URL}/dashboard?${queryParams}`);
-    } catch (error) {
-      console.error("Error durante el callback de Google:", error);
-      res.redirect(`${BASE_URL}/error?message=Error durante la autenticación`);
-    }
-  }
-);
 
 // Ruta de prueba
 app.get("/", (req, res) => {
