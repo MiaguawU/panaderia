@@ -63,11 +63,12 @@ app.use(morgan("dev"));
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
 // Configuración de sesiones con Redis
-const redisStore = RedisStore(session); // Cambiado: RedisStore como función
 app.use(
   session({
-    store: new redisStore({ client: redisClient }),
-    secret: process.env.SESSION_SECRET, // Mantenlo en las variables de entorno
+    store: new RedisStore({
+      client: redisClient, // Reutiliza tu cliente de Redis
+    }),
+    secret: process.env.SESSION_SECRET || "defaultSecret", // Cambiar por una clave segura
     resave: false,
     saveUninitialized: false,
   })
