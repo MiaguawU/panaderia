@@ -2,6 +2,7 @@ const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
 const RedisStore = require("connect-redis").default;
+const Redis = require("ioredis");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
 const loginRouter = require("./base/login");
