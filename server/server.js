@@ -1,3 +1,4 @@
+// Importaciones principales
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
@@ -40,9 +41,9 @@ const storage = multer.diskStorage({
 
 // Configuración de Redis
 const redisClient = new Redis({
-  host: process.env.DB_HOST,
-  port: process.env.REDIS_PORT || 6379, // Usa REDIS_PORT
-  password: process.env.DB_PASSWORD || null,
+  host: process.env.DB_HOST || "127.0.0.1", // Dirección del host de Redis
+  port: process.env.REDIS_PORT || 6379,     // Puerto de Redis
+  password: process.env.DB_PASSWORD || null, // Contraseña de Redis si aplica
 });
 
 redisClient.on("connect", () => {
@@ -60,9 +61,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
+// Servir archivos estáticos
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
-// Configuración de sesiones con Redis
+// Configuración de sesiones con RedisStore
 app.use(
   session({
     store: new RedisStore({ client: redisClient }),
@@ -130,8 +132,10 @@ app.use("/carros", carros);
 app.use("/proCar", produCar);
 app.use("/compras", compras);
 
+// Desactivar ETag
 app.disable("etag");
 
+// Inicialización del servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`Servidor corriendo en http://localhost:${PORT}`)
