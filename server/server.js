@@ -1,7 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
-const RedisStore = require("connect-redis").default; // Asegúrate de usar `.default` para la versión 8.x
+const RedisStore = require("connect-redis"); // Sin `.default`
 const Redis = require("ioredis");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
