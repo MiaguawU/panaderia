@@ -124,7 +124,7 @@ app.use("/compras", compras);
 
 app.disable("etag");
 
-const PORT = process.env.SERVER_PORT ;
-app.listen(PORT, () =>
+const PORT1 = process.env.PORT ;
+app.listen(PORT1, () =>
   console.log(`Servidor corriendo en http://localhost:${PORT}`)
 );
