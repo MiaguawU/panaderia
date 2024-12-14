@@ -78,6 +78,17 @@ const Ticket = () => {
           color: '#FFCCF0',
         }}
       >
+        <div
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semitransparente
+      zIndex: 1,
+    }}
+  ></div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
           <img
             src="https://i.pinimg.com/736x/14/f3/63/14f3635a9f6137cc99d441417ea8054b.jpg"
