@@ -1,7 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
-const RedisStore = require("connect-redis")(session); // Correcto
+const connectRedis = require("connect-redis");
 const Redis = require("ioredis");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
@@ -53,6 +53,9 @@ redisClient.on("error", (err) => {
   console.error("Error en Redis:", err);
 });
 
+// Inicialización de RedisStore
+const RedisStore = connectRedis(session);
+
 // Inicialización del servidor
 const app = express();
 app.use(cors());
@@ -63,13 +66,11 @@ app.use(morgan("dev"));
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
 // Configuración de sesiones con Redis
-const redisStore = new RedisStore({
-  client: redisClient,
-});
-
 app.use(
   session({
-    store: redisStore,
+    store: new RedisStore({
+      client: redisClient,
+    }),
     secret: process.env.SESSION_SECRET || "defaultSecret", // Cambiar por una clave segura
     resave: false,
     saveUninitialized: false,
