@@ -1,142 +1,74 @@
-// Importaciones principales
 const express = require("express");
-const multer = require("multer");
 const session = require("express-session");
-const RedisStore = require("connect-redis").default; // Uso correcto de RedisStore
+const { RedisStore } = require("connect-redis");
 const Redis = require("ioredis");
-const passport = require("./base/auth");
-const usuario = require("./base/usuarios");
-const loginRouter = require("./base/login");
-const logoutRouter = require("./base/logout");
 const morgan = require("morgan");
-const dotenv = require("dotenv");
 const cors = require("cors");
+const dotenv = require("dotenv");
 const path = require("path");
-const call = require("./base/manejo");
-const routerSave = require("./base/Save");
-const carrito = require("./base/carritos");
-const compras = require("./base/compras");
-const productos = require("./base/productos");
-const cliente = require("./base/cliente");
-const temporada = require("./base/temporada");
-const roles = require("./base/roles");
-const carros = require("./base/carritos");
-const produCar = require("./base/carrito_producto");
 
+// Carga las variables de entorno
 dotenv.config();
 
-// Configuración de multer para manejo de archivos
-const upload = multer({
-  storage: multer.memoryStorage(),
-}).any();
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "imagenes")); // Ruta para guardar imágenes
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-
-// Configuración de Redis
+// Inicializa el cliente de Redis con ioredis
 const redisClient = new Redis({
-  host: process.env.DB_HOST,
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.DB_PASSWORD || null,
+  host: process.env.DB_HOST, // Host del servidor Redis
+  port: process.env.REDIS_PORT || 6379, // Puerto de Redis
+  password: process.env.DB_PASSWORD || null, // Contraseña (si aplica)
 });
 
+// Conexión a Redis
 redisClient.on("connect", () => {
-  console.log("Conectado a Redis");
+  console.log("Conectado a Redis correctamente");
 });
 
 redisClient.on("error", (err) => {
-  console.error("Error en Redis:", err);
+  console.error("Error en la conexión a Redis:", err);
 });
 
-// Inicialización del servidor
+// Inicializa RedisStore
+const redisStore = new RedisStore({
+  client: redisClient, // Cliente Redis
+  prefix: "myapp:", // Prefijo opcional para las claves
+});
+
+// Inicializa el servidor Express
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
-// Servir archivos estáticos
-app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
-
-// Configuración de sesiones con RedisStore
+// Configuración de la sesión con Redis
 app.use(
   session({
-    store: new RedisStore({ client: redisClient }), // Correcta inicialización de RedisStore
-    secret: process.env.SESSION_SECRET || "defaultSecret",
-    resave: false,
-    saveUninitialized: false,
+    store: redisStore, // Uso de RedisStore como almacenamiento de sesiones
+    secret: process.env.SESSION_SECRET || "defaultSecret", // Clave secreta
+    resave: false, // No guarda la sesión si no se modifica
+    saveUninitialized: false, // No guarda sesiones vacías
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // Cookies seguras en producción
+      httpOnly: true, // Protege contra ataques XSS
+      maxAge: 1000 * 60 * 60 * 24, // Expira en 1 día
+    },
   })
 );
 
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Rutas de usuarios
-app.use("/usuarios", usuario);
-app.use("/login", loginRouter);
-app.use("/logout", logoutRouter);
-app.use("/manejo", call);
-app.use("/save", routerSave);
-app.use("/cliente", cliente);
-app.use("/roles", roles);
-
-// Ruta de autenticación con Google
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
-const BASE_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-
-// Callback después de autenticación con Google
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    try {
-      const user = {
-        id: req.user.id_usuario,
-        username: req.user.nombre_usuario,
-        email: req.user.correo,
-        imagen: req.user.imagen,
-        fondos: req.user.fondos || 0,
-      };
-
-      const queryParams = new URLSearchParams({
-        id: user.id.toString(),
-        username: user.username,
-        email: user.email,
-        imagen: user.imagen,
-        fondos: user.fondos.toString(),
-        message: "Sesión iniciada con éxito",
-      });
-
-      res.redirect(`${BASE_URL}/dashboard?${queryParams}`);
-    } catch (error) {
-      console.error("Error durante el callback de Google:", error);
-      res.redirect(`${BASE_URL}/error?message=Error durante la autenticación`);
-    }
+// Ruta de prueba para verificar sesiones
+app.get("/", (req, res) => {
+  if (!req.session.viewCount) {
+    req.session.viewCount = 1;
+  } else {
+    req.session.viewCount += 1;
   }
-);
+  res.send(`Visitas: ${req.session.viewCount}`);
+});
 
-// Rutas adicionales
-app.use("/productos", productos);
-app.use("/temporada", temporada);
-app.use("/carros", carros);
-app.use("/proCar", produCar);
-app.use("/compras", compras);
+// Configuración de archivos estáticos
+app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
-// Desactivar ETag
-app.disable("etag");
-
-// Inicialización del servidor
+// Inicializa el servidor
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`Servidor corriendo en http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
