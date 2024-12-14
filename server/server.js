@@ -1,7 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
-const RedisStore = require("connect-redis").default; // Import moderno de connect-redis
+const RedisStore = require("connect-redis").default;
 const Redis = require("ioredis");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
@@ -66,7 +66,7 @@ app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 app.use(
   session({
     store: new RedisStore({ client: redisClient }),
-    secret: process.env.SESSION_SECRET || "defaultSecret", // Cambiar por una clave segura
+    secret: process.env.SESSION_SECRET || "defaultSecret",
     resave: false,
     saveUninitialized: false,
   })
