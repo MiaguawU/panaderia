@@ -10,14 +10,7 @@ router.get('/', (req, res) => {
     });
 });
 
-router.post('/', (req, res) => {
-    const { nombre_usuario, correo, contrasena, id_rol, imagen, fondos } = req.body;
-    const sql = 'INSERT INTO Usuarios (nombre_usuario, correo, contrasena, id_rol, imagen, fondos) VALUES (?, ?, ?, ?, ?, ?)';
-    db.query(sql, [nombre_usuario, correo, contrasena, id_rol, imagen, fondos], (err, result) => {
-        if (err) return res.status(500).send('Error al agregar el usuario.');
-        res.status(201).json({ id: result.insertId });
-    });
-});
+
 
 router.post('/', (req, res) => {
     const { nombre_usuario, correo, contrasena, id_rol, imagen, fondos } = req.body;

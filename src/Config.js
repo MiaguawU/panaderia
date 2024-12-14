@@ -1,2 +1,2 @@
-const PUERTO = 'https://panaderia-server-dshf.onrender.com';
+const PUERTO = process.env.SERVER_URL;
 export default PUERTO;
