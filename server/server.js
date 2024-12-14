@@ -1,7 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const multer = require("multer");
-const RedisStore = require("connect-redis").default; // Asegúrate de que "default" esté presente si usas versiones modernas de connect-redis
+const RedisStore = require("connect-redis"); // Sin ".default"
 const Redis = require("ioredis");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
@@ -63,11 +63,10 @@ app.use(morgan("dev"));
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
 // Configuración de sesiones con Redis
-const redisStore = new RedisStore({ client: redisClient });
-
+const redisStore = RedisStore(session); // Cambiado: RedisStore como función
 app.use(
   session({
-    store: redisStore,
+    store: new redisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET, // Mantenlo en las variables de entorno
     resave: false,
     saveUninitialized: false,
@@ -100,7 +99,6 @@ app.get(
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
     try {
-      // Datos del usuario autenticado
       const user = {
         id: req.user.id_usuario,
         username: req.user.nombre_usuario,
@@ -109,7 +107,6 @@ app.get(
         fondos: req.user.fondos || 0,
       };
 
-      // Serializar datos del usuario
       const queryParams = new URLSearchParams({
         id: user.id.toString(),
         username: user.username,
@@ -119,7 +116,6 @@ app.get(
         message: "Sesión iniciada con éxito",
       });
 
-      // Redirigir al frontend con los datos
       res.redirect(`${BASE_URL}/dashboard?${queryParams}`);
     } catch (error) {
       console.error("Error durante el callback de Google:", error);
