@@ -41,6 +41,8 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
@@ -61,6 +63,48 @@ app.use(
       maxAge: 1000 * 60 * 60 * 24, // 1 día
     },
   })
+);
+
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+const BASE_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+// Ruta de callback después de la autenticación con Google
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }),
+  (req, res) => {
+    try {
+      // Datos del usuario autenticado
+      const user = {
+        id: req.user.Id_Usuario,
+        username: req.user.Nombre_Usuario,
+        email: req.user.Email,
+        foto_perfil: req.user.foto_perfil,
+        Cohabitantes: req.user.Cohabitantes || null,
+      };
+
+      // Serializar los datos del usuario como query string
+      const queryParams = new URLSearchParams({
+        id: user.id.toString(),
+        username: user.username,
+        email: user.email,
+        foto_perfil: user.foto_perfil,
+        Cohabitantes: user.Cohabitantes ? user.Cohabitantes.toString() : "",
+        message: "Sesión iniciada con éxito",
+      });
+
+      // Redirigir al frontend con los datos
+      const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
+      res.redirect(`${frontendURL}/dashboard?${queryParams}`);
+    } catch (error) {
+      console.error("Error durante el callback de Google:", error);
+      res.redirect(`${BASE_URL}/error?message=Error durante la autenticación`);
+    }
+  }
 );
 
 app.use(passport.initialize());

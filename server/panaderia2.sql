@@ -126,8 +126,8 @@ BEGIN
     -- Calcular el total del carrito
     SELECT SUM(p.precio * c.cantidad)
     INTO total
-    FROM carrito_productos c
-    LEFT JOIN producto p ON p.id_producto = c.id_producto
+    FROM Carrito_Productos c
+    LEFT JOIN Producto p ON p.id_producto = c.id_producto
     WHERE c.id_carrito = id_carrito_input;
     
     -- Crear la compra
@@ -144,12 +144,12 @@ BEGIN
         c.id_producto,
         c.cantidad,
         p.precio
-    FROM carrito_productos c
-    LEFT JOIN producto p ON p.id_producto = c.id_producto
+    FROM Carrito_Productos c
+    LEFT JOIN Producto p ON p.id_producto = c.id_producto
     WHERE c.id_carrito = id_carrito_input;
 
     -- Limpiar el carrito
-    DELETE FROM carrito_productos WHERE id_carrito = id_carrito_input;
+    DELETE FROM Carrito_Productos WHERE id_carrito = id_carrito_input;
 END$$
 
 DELIMITER ;
