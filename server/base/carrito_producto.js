@@ -10,14 +10,14 @@ router.get('/:id', (req, res) => {
         return res.status(400).send('El ID debe ser un número válido.');
     }
     const sql = `
-  SELECT 
-  c.id_carrito_producto AS id,
-  p.nombre_producto AS producto,
-  c.cantidad AS cantidad,
-  p.precio AS precio
-FROM carrito_productos c 
-LEFT JOIN producto p ON p.id_producto = c.id_producto 
-where c.id_carrito = ?;`;
+        SELECT 
+            c.id_carrito_producto AS id,
+            p.nombre_producto AS producto,
+            c.cantidad AS cantidad,
+            p.precio AS precio
+        FROM Carrito_productos c
+        LEFT JOIN Producto p ON p.id_producto = c.id_producto
+        WHERE c.id_carrito = ?;`;
     db.query(sql,[id],  (err, results) => {
         if (err) return res.status(500).send('Error al obtener los carritos.');
         res.json(results);
@@ -27,7 +27,7 @@ where c.id_carrito = ?;`;
 router.post('/', (req, res) => {
     const { id_car, id_pro, cantidad } = req.body;
     console.log(req.body);
-    const sql = 'insert into carrito_productos (id_carrito,id_producto,cantidad) values (?,?,?);';
+    const sql = 'INSERT INTO Carrito_productos (id_carrito,id_producto,cantidad) VALUES (?,?,?);';
     
     db.query(sql, [id_car,id_pro,cantidad], (err, result) => {
         if (err) return res.status(500).send('Error al agregar el carrito.');
@@ -37,7 +37,7 @@ router.post('/', (req, res) => {
 
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
-    const sql = 'DELETE FROM carrito_productos WHERE id_producto = ?';
+    const sql = 'DELETE FROM Carrito_productos WHERE id_producto = ?';
     db.query(sql, [id], (err) => {
         if (err) return res.status(500).send('Error al eliminar el carrito.');
         res.json({ message: 'Carrito eliminado correctamente.' });
@@ -53,7 +53,7 @@ router.put('/:id', (req, res) => {
     }
 
     const sql = `
-        UPDATE carrito_productos
+        UPDATE Carrito_productos
         SET cantidad = ?
         WHERE id_producto = ?;
     `;
