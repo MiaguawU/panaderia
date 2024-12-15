@@ -11,7 +11,7 @@ router.get('/:id', (req, res) => {
     }
     console.log(id);
     const sql = `
-        SELECT id_carrito from carritos where id_usuario = ?;
+        SELECT id_carrito from Carritos WHERE id_usuario = ?;
     `;
     db.query(sql, [id],(err, results) => {
         if (err) return res.status(500).send('Error al obtener los carritos.');
