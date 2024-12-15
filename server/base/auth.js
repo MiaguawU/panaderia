@@ -7,7 +7,7 @@ passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET, // Corregido para que use la variable correcta
+      clientSecret: process.env.CLIENT_SECRET , // Corregido para que use la variable correcta
       callbackURL: `${process.env.SERVER_URL}/auth/google/callback`,
     },
     (accessToken, refreshToken, profile, done) => {

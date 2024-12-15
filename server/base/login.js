@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./connection'); // Asegúrate de configurar la conexión correctamente.
+const db = require('./connection'); // Asegúrate de que la conexión esté configurada correctamente.
 
 const router = express.Router();
 
@@ -12,27 +12,28 @@ router.post('/', (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).send("Faltan datos requeridos: username y password");
+    return res.status(400).json({ error: "Faltan datos requeridos: username y password" });
   }
 
-  // Validar el usuario en la tabla Usuarios
-  db.query('SELECT * FROM Usuarios WHERE nombre_usuario = ?', [username], (err, result) => {
+  // Validar el usuario directamente en la base de datos
+  const query = `
+    SELECT id_usuario, nombre_usuario, imagen, fondos, id_rol
+    FROM Usuarios
+    WHERE nombre_usuario = $1 AND contrasena = $2
+  `;
+  const values = [username, password];
+
+  db.query(query, values, (err, result) => {
     if (err) {
-      console.error("Error al obtener el usuario:", err);
-      return res.status(500).send('Error al obtener el usuario');
+      console.error("Error al realizar la consulta:", err);
+      return res.status(500).json({ error: 'Error al realizar la consulta' });
     }
 
-    if (result.length === 0) {
-      return res.status(404).send('Usuario no encontrado');
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
-    const user = result[0];
-
-    // Validar la contraseña
-    if (user.contrasena !== password) {
-      return res.status(401).send('Contraseña incorrecta');
-    }
-
+    const user = result.rows[0];
     res.json({
       id: user.id_usuario,
       username: user.nombre_usuario,
@@ -41,27 +42,6 @@ router.post('/', (req, res) => {
       id_rol: user.id_rol,
       message: "Sesión iniciada con éxito",
     });
-  });
-});
-
-// Ruta para listar productos según la temporada
-router.get('/productos/:temporada', (req, res) => {
-  const temporada = req.params.temporada;
-
-  const query = `
-    SELECT p.id_producto, p.nombre_producto, p.precio, p.descripcion, p.piezas, p.imagen_url, t.temporada
-    FROM Producto p
-    JOIN Temporada t ON p.id_temporada = t.id_temporada
-    WHERE t.temporada = ?
-  `;
-
-  db.query(query, [temporada], (err, results) => {
-    if (err) {
-      console.error("Error al obtener los productos:", err);
-      return res.status(500).send('Error al obtener los productos');
-    }
-
-    res.json(results);
   });
 });
 

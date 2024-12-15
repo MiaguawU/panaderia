@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Productos from './Productos';
-import ProductosCliente from './ProuctosCliente';
-import ProductoVista from './ProductosVista';
+import ProductosCliente from './ProuctosCliente'; // Corrección del nombre
+import ProductoVista from './ProductosVista'; // Corrección del nombre
 import Agregar from './Agregar';
 import Actualizar from './Actualizar';
 import Temporada from './Temporada';
@@ -12,9 +12,9 @@ import Carrito from './Carrito';
 import Perfil from './vistas/Usuario';
 import HistorialCompras from './vistas/Historial';
 import Ticket from './vistas/Ticket';
-import axios from 'axios';
-import PUERTO from './Config';
 import Historial from './vistas/HistorialAdmin';
+import axios from 'axios';
+import API_URL from './Config';
 
 const NavClienteSinSesion = () => (
   <nav style={styles.nav}>
@@ -39,33 +39,28 @@ const NavClienteConSesion = () => (
     <Link to="/perfil" style={styles.link}>Perfil</Link>
   </nav>
 );
-
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   const obtenerDatosUsuario = async () => {
     try {
-      const currentUserId = localStorage.getItem('currentUser');
-      if (!currentUserId) {
+      // Obtener el objeto completo desde localStorage
+      const storedUser = localStorage.getItem('currentUser');
+      if (!storedUser) {
+        console.warn('No se encontró usuario en localStorage.');
         setCurrentUser(null);
         return;
       }
-
-      const response = await axios.get(`${PUERTO}/cliente/${currentUserId}`, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.data && response.data.length > 0) {
-        const userData = response.data[0];
-        setCurrentUser({ id: userData.id, id_rol: userData.id_rol });
-      } else {
-        setCurrentUser(null);
-      }
+  
+      const userData = JSON.parse(storedUser);
+      setCurrentUser(userData);
+  
     } catch (error) {
       console.error('Error al obtener datos del usuario:', error);
       setCurrentUser(null);
     }
   };
+  
 
   useEffect(() => {
     obtenerDatosUsuario();

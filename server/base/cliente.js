@@ -31,25 +31,41 @@ router.post('/', (req, res) => {
         return res.status(400).send('Faltan datos requeridos: username o password.');
     }
 
+    // Consulta para insertar un usuario y devolver su id
     const sql = `
         INSERT INTO Usuarios (nombre_usuario, contrasena, id_rol, imagen, fondos)
-        VALUES ($1, $2, $3, 'https://i.pinimg.com/736x/ea/55/a7/ea55a756b236f936d4e9f2b8c356bdaf.jpg', 0)
+        VALUES ($1, $2, 2, 'https://i.pinimg.com/736x/ea/55/a7/ea55a756b236f936d4e9f2b8c356bdaf.jpg', 0)
+        RETURNING id_usuario
     `;
+
+    // Consulta para insertar el carrito
     const sql2 = `
         INSERT INTO carritos (id_usuario)
         VALUES ($1)
     `;
 
+    // Insertar el usuario
     db.query(sql, [username, password], (err, result) => {
-        if (err) return handleError(res, 'Error al agregar el usuario.', err);
+        if (err) {
+            console.error('Error al agregar el usuario:', err);
+            return res.status(500).send('Error al agregar el usuario.');
+        }
 
-        const id_usuario = result.insertId;
+        // Obtener el id del usuario recién insertado
+        const id_usuario = result.rows[0].id_usuario;
+
+        // Insertar el carrito asociado al usuario
         db.query(sql2, [id_usuario], (err1) => {
-            if (err1) return handleError(res, 'Error al agregar carrito.', err1);
+            if (err1) {
+                console.error('Error al agregar el carrito:', err1);
+                return res.status(500).send('Error al agregar carrito.');
+            }
+
             res.status(201).json({ id: id_usuario });
         });
     });
 });
+
 
 // Actualizar un usuario
 router.put('/:id', (req, res) => {
