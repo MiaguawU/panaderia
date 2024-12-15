@@ -127,7 +127,7 @@ router.post('/', (req, res) => {
         c.cantidad AS cantidad,
         p.precio AS precio,
         c.id_producto
-      FROM Carrito_productos c 
+      FROM Carrito_Productos c 
       LEFT JOIN Producto p ON p.id_producto = c.id_producto 
       WHERE c.id_carrito = ?;`;
 

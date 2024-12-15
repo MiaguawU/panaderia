@@ -10,24 +10,28 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
 
   const handleFinish = async (values) => {
     try {
+      setLoading(true);
+
+      // Obtener el ID del usuario actual
       const currentUserId = localStorage.getItem("currentUser");
       if (!currentUserId) {
         message.warning("No hay un usuario logueado actualmente.");
-        setLoading(false);
         return;
       }
-      setLoading(true);
 
-      // Si la contraseña no está vacía, se la enviamos en la solicitud
-      const { password, ...userData } = values;
-      if (password === "") delete userData.password; // Eliminar la contraseña si no se quiere actualizar
+      // Preparar los datos para la solicitud
+      const { password, fondos, ...userData } = values;
+      if (password) {
+        userData.password = password; // Solo enviar contraseña si fue ingresada
+      }
+      userData.fondos = Number(fondos); // Asegurar que los fondos sean numéricos
 
-      // Enviar solicitud al backend para actualizar el perfil
+      // Enviar la solicitud al backend
       const response = await axios.put(`${PUERTO}/cliente/${currentUserId}`, userData);
 
       message.success("Perfil actualizado correctamente");
       onUpdate(response.data); // Notifica al componente padre del cambio
-      onClose();
+      onClose(); // Cerrar el modal
     } catch (error) {
       console.error("Error al actualizar el perfil:", error);
       message.error(
@@ -55,7 +59,7 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
         layout="vertical"
         initialValues={{ username, email, foto_perfil, fondos }}
         onFinish={handleFinish}
-        onReset={() => onClose()} // Reset form on close
+        onReset={handleClose}
       >
         <Form.Item
           label="Nombre de Usuario"
@@ -68,9 +72,8 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
         <Form.Item
           label="Correo Electrónico"
           name="email"
-          rules={[{ type: "email", message: "Por favor, ingresa un correo electrónico válido" }]}
         >
-          <Input />
+          <Input placeholder="Correo Electrónico" />
         </Form.Item>
 
         <Form.Item
@@ -81,7 +84,13 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
           <Input placeholder="URL de Imagen de Perfil" />
         </Form.Item>
 
-        <Form.Item label="Fondos" name="fondos">
+        <Form.Item
+          label="Fondos"
+          name="fondos"
+          rules={[
+            { required: true, message: "Por favor, ingresa tus fondos actuales" },
+          ]}
+        >
           <Input type="number" placeholder="Fondos" min={0} />
         </Form.Item>
 
@@ -92,7 +101,7 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
             { min: 6, message: "La contraseña debe tener al menos 6 caracteres" },
           ]}
         >
-          <Input.Password placeholder="Contraseña" autoComplete="current-password" />
+          <Input.Password placeholder="Contraseña" autoComplete="new-password" />
         </Form.Item>
 
         <Form.Item>
