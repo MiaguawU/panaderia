@@ -13,26 +13,25 @@ const ProductosCliente = () => {
 
   const isAuthenticated = false; // Cambiar esto a la lógica de autenticación real
 
-  useEffect(() => {
-    fetch(`${API_URL}/productos`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data.rows)) { // Corrige la estructura según el JSON recibido
-          setProductos(data.rows);
-        } else {
-          console.error('La API no devolvió un arreglo válido:', data);
-        }
-      })
-      .catch((error) => {
-        console.error('Error al obtener los productos:', error.message);
-        alert('Hubo un problema al cargar los productos. Por favor, inténtalo más tarde.');
-      });
-  }, []);
+  fetch(`${API_URL}/productos`)
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then((data) => {
+    if (Array.isArray(data)) { // Verifica si el resultado es un arreglo
+      setProductos(data);
+    } else {
+      console.error('La API no devolvió un arreglo válido:', data);
+    }
+  })
+  .catch((error) => {
+    console.error('Error al obtener los productos:', error.message);
+    alert('Hubo un problema al cargar los productos. Por favor, inténtalo más tarde.');
+  });
+
 
   const agregarAlCarrito = (producto) => {
     setProductoSeleccionado(producto);
@@ -89,79 +88,78 @@ const ProductosCliente = () => {
             justifyContent: 'center',
           }}
         >
-          {Array.isArray(productos) &&
-            productos.map((producto) => (
-              <Card
-                key={producto.id_producto}
-                hoverable
-                style={{
-                  width: 300,
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                }}
-                cover={
-                  producto.imagen_url ? (
-                    <img
-                      src={producto.imagen_url}
-                      alt={producto.nombre_producto}
-                      style={{
-                        width: '100%',
-                        height: 200,
-                        objectFit: 'cover',
-                        borderTopLeftRadius: '8px',
-                        borderTopRightRadius: '8px',
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        height: 200,
-                        background: '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#aaa',
-                      }}
-                    >
-                      Sin imagen
-                    </div>
-                  )
-                }
-              >
-                <Title level={4} style={{ marginBottom: '8px', color: '#333' }}>
-                  {producto.nombre_producto}
-                </Title>
-                <Paragraph style={{ marginBottom: '8px', color: '#555' }}>
-                  {producto.descripcion}
-                </Paragraph>
-                <Paragraph style={{ marginBottom: '8px', color: '#333', fontWeight: 'bold' }}>
-                  Precio: ${parseFloat(producto.precio).toFixed(2)}
-                </Paragraph>
-                <Paragraph style={{ marginBottom: '8px', color: '#333', fontWeight: 'bold' }}>
-                  Piezas disponibles: {producto.piezas}
-                </Paragraph>
-                <Paragraph style={{ marginBottom: '16px', color: '#333' }}>
-                  Temporada: <strong>{producto.temporada}</strong>
-                </Paragraph>
-                <Space>
-                  <Button
-                    type="primary"
-                    icon={<ShoppingCartOutlined />}
-                    disabled={!isAuthenticated}
-                    onClick={() => agregarAlCarrito(producto)}
+          {productos.map((producto) => (
+            <Card
+              key={producto.id_producto}
+              hoverable
+              style={{
+                width: 300,
+                border: '1px solid #d9d9d9',
+                borderRadius: '8px',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              }}
+              cover={
+                producto.imagen_url ? (
+                  <img
+                    src={producto.imagen_url}
+                    alt={producto.nombre_producto}
+                    style={{
+                      width: '100%',
+                      height: 200,
+                      objectFit: 'cover',
+                      borderTopLeftRadius: '8px',
+                      borderTopRightRadius: '8px',
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      height: 200,
+                      background: '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#aaa',
+                    }}
                   >
-                    {isAuthenticated ? 'Agregar al Carrito' : 'Inicia sesión primero'}
-                  </Button>
-                </Space>
-              </Card>
-            ))}
+                    Sin imagen
+                  </div>
+                )
+              }
+            >
+              <Title level={4} style={{ marginBottom: '8px', color: '#333' }}>
+                {producto.nombre_producto}
+              </Title>
+              <Paragraph style={{ marginBottom: '8px', color: '#555' }}>
+                {producto.descripcion}
+              </Paragraph>
+              <Paragraph style={{ marginBottom: '8px', color: '#333', fontWeight: 'bold' }}>
+                Precio: ${parseFloat(producto.precio).toFixed(2)}
+              </Paragraph>
+              <Paragraph style={{ marginBottom: '8px', color: '#333', fontWeight: 'bold' }}>
+                Piezas disponibles: {producto.piezas}
+              </Paragraph>
+              <Paragraph style={{ marginBottom: '16px', color: '#333' }}>
+                Temporada: <strong>{producto.temporada}</strong>
+              </Paragraph>
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<ShoppingCartOutlined />}
+                  disabled={!isAuthenticated}
+                  onClick={() => agregarAlCarrito(producto)}
+                >
+                  {isAuthenticated ? 'Agregar al Carrito' : 'Inicia sesión primero'}
+                </Button>
+              </Space>
+            </Card>
+          ))}
         </div>
 
         {/* Modal para el carrito */}
         <Modal
           title="Producto Agregado al Carrito"
-          open={carritoVisible} // Cambiado de "visible" a "open" según la advertencia
+          open={carritoVisible}
           onCancel={cerrarModal}
           footer={[
             <Button key="close" onClick={cerrarModal}>

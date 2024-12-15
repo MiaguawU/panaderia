@@ -37,8 +37,7 @@ router.post('/', async (req, res) => {
     `;
     
     const sql2 = `
-        INSERT INTO carritos (id_usuario)
-        VALUES (?)
+        INSERT INTO Carritos (id_usuario) VALUE (?)
     `;
 
     try {

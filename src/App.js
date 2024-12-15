@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Productos from './Productos';
-import ProductosCliente from './ProuctosCliente';  // Corregido el nombre del archivo
+import ProductosCliente from './ProuctosCliente';  
 import ProductoVista from './ProductosVista';
 import Agregar from './Agregar';
 import Actualizar from './Actualizar';
@@ -59,14 +59,14 @@ const App = () => {
         setCurrentUser(null);
         return;
       }
-  
+
       const response = await axios.get(`${PUERTO}/cliente/${currentUserId}`, {
         headers: { 'Content-Type': 'application/json' },
       });
-  
-      if (response.data && response.data.rows && response.data.rows.length > 0) {
-        const userData = response.data.rows[0];  // Acceder al primer elemento del array 'rows'
-        setCurrentUser({ id: userData.id_usuario, id_rol: userData.id_rol });  // Usar 'id_usuario' para el id
+
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        const userData = response.data[0];
+        setCurrentUser({ id: userData.id_usuario, id_rol: userData.id_rol });
       } else {
         setCurrentUser(null);
       }
@@ -75,7 +75,6 @@ const App = () => {
       setCurrentUser(null);
     }
   };
-  
 
   useEffect(() => {
     obtenerDatosUsuario();
@@ -121,6 +120,8 @@ const App = () => {
     </Router>
   );
 };
+
+
 
 export default App;
 

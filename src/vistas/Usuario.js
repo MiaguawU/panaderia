@@ -30,8 +30,8 @@ const UserProfile = () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      if (response.data && response.data.rows && response.data.rows.length > 0) {
-        const userData = response.data.rows[0]; // Accede al primer objeto en 'rows'
+      if (response.data && response.data && response.data.length > 0) {
+        const userData = response.data[0]; // Accede al primer objeto en 'rows'
         setCurrentUser({
           id: userData.id_usuario,
           username: userData.nombre_usuario || "Nombre de Usuario",

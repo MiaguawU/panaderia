@@ -13,16 +13,24 @@ const ProductosCliente = () => {
   const [cantidad, setCantidad] = useState(1);
 
   useEffect(() => {
-    const fetchProductos = async () => {
-      try {
-        const response = await axios.get(`${PUERTO}/productos`);
-        setProductos(response.data);
-      } catch (error) {
-        console.error('Error al obtener los productos:', error);
-        message.error('Error al cargar los productos.');
-      }
-    };
-    fetchProductos();
+    fetch(`${PUERTO}/productos`)
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then((data) => {
+    if (Array.isArray(data)) { // Verifica si el resultado es un arreglo
+      setProductos(data);
+    } else {
+      console.error('La API no devolvió un arreglo válido:', data);
+    }
+  })
+  .catch((error) => {
+    console.error('Error al obtener los productos:', error.message);
+    alert('Hubo un problema al cargar los productos. Por favor, inténtalo más tarde.');
+  });
   }, []);
 
   const agregarAlCarrito = (producto) => {
@@ -44,15 +52,21 @@ const ProductosCliente = () => {
   const enviar = async () => {
     if (!productoSeleccionado) return;
     const currentUserId = localStorage.getItem('currentUser');
-      if (!currentUserId) {
-        message.warning('No hay un usuario logueado actualmente.');
-        return null;
-      }
-      const response = await axios.get(`${PUERTO}/carros/${currentUserId}`);
-      const id_carrito = response.data.map((carrito) => carrito.id_carrito);
-      const Carrito = id_carrito[0];
+    if (!currentUserId) {
+      message.warning('No hay un usuario logueado actualmente.');
+      return null;
+    }
 
     try {
+      // Obtener el carrito del usuario
+      const response = await axios.get(`${PUERTO}/carros/${currentUserId}`);
+      const id_carrito = response.data.map((carrito) => carrito.id_carrito);
+      if (id_carrito.length === 0) {
+        message.error('No se encontró un carrito para el usuario.');
+        return;
+      }
+
+      const Carrito = id_carrito[0];
 
       const data = {
         id_car: Carrito,
@@ -60,6 +74,7 @@ const ProductosCliente = () => {
         cantidad: cantidad,
       };
 
+      // Agregar el producto al carrito
       await axios.post(`${PUERTO}/proCar`, data);
 
       message.success('Producto agregado al carrito.');
