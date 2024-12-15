@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button, Form, Input, Tabs, Typography, message } from "antd";
 import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
-import PUERTO from '../Config';
+import API_URL from '../Config';
 import axios from "axios";
 import "./estilos/Acceder.css";
 
@@ -20,13 +20,13 @@ const ChristmasAuth = ({ onLogin }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${PUERTO}/auth/google`;
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   const handleRegister = async (values) => {
     try {
       setLoading(true);
-      const response = await axios.post(`${PUERTO}/cliente`, values);
+      const response = await axios.post(`${API_URL}/cliente`, values);
       if (response.data?.id) {
         setSessionData("user", response.data);
         message.success("Registro exitoso");
@@ -46,7 +46,7 @@ const ChristmasAuth = ({ onLogin }) => {
   const handleLogin = async (values) => {
     try {
       setLoading(true);
-      const response = await axios.post(`${PUERTO}/login`, values);
+      const response = await axios.post(`${API_URL}/login`, values);
       if (response.data?.id) {
         const { id, username, foto_perfil } = response.data;
         const usuarios = JSON.parse(localStorage.getItem("usuarios") || "{}");
