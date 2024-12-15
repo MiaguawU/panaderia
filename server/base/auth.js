@@ -48,7 +48,7 @@ passport.use(
               if (insertErr) return done(insertErr);
 
               const id_usuario = result.insertId; // Obtener el ID del nuevo usuario
-              const sql2 = "INSERT INTO carritos (id_usuario) VALUES (?)";
+              const sql2 = "INSERT INTO Carritos (id_usuario) VALUES (?)";
               
               db.query(sql2, [id_usuario], (carritoErr) => {
                 if (carritoErr) {
