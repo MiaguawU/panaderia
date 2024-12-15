@@ -8,7 +8,7 @@ passport.use(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET, // Corregido para que use la variable correcta
-      callbackURL: `${process.env.REACT_APP_API_URL}/auth/google/callback`,
+      callbackURL: `${process.env.SERVER_URL}/auth/google/callback`,
     },
     (accessToken, refreshToken, profile, done) => {
       try {
