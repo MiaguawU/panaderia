@@ -16,10 +16,17 @@ const ProductosCliente = () => {
 
   useEffect(() => {
     fetch(`${PUERTO}/productos`)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Error al obtener los productos');
+        }
+        return response.json();
+      })
       .then((data) => setProductos(data))
       .catch((error) => console.error('Error al obtener los productos:', error));
   }, []);
+  
+  
 
   const agregarAlCarrito = (producto) => {
     setProductoSeleccionado(producto);
