@@ -14,13 +14,9 @@ const ChristmasAuth = ({ onLogin }) => {
 
   // Funciones auxiliares para manejo de almacenamiento
   const setSessionData = (key, value) => {
-    localStorage.setItem(key, JSON.stringify(value));
-    sessionStorage.setItem(key, JSON.stringify(value));
-  };
-
-  const removeSessionData = (key) => {
-    localStorage.removeItem(key);
-    sessionStorage.removeItem(key);
+    const stringValue = JSON.stringify(value);
+    localStorage.setItem(key, stringValue);
+    sessionStorage.setItem(key, stringValue);
   };
 
   const handleGoogleLogin = () => {
@@ -31,7 +27,7 @@ const ChristmasAuth = ({ onLogin }) => {
     try {
       setLoading(true);
       const response = await axios.post(`${PUERTO}/cliente`, values);
-      if (response.data && response.data.id) {
+      if (response.data?.id) {
         setSessionData("user", response.data);
         message.success("Registro exitoso");
       } else {
@@ -46,22 +42,22 @@ const ChristmasAuth = ({ onLogin }) => {
       setLoading(false);
     }
   };
-  
+
   const handleLogin = async (values) => {
     try {
       setLoading(true);
       const response = await axios.post(`${PUERTO}/login`, values);
-      if (response.data && response.data.id) {
+      if (response.data?.id) {
         const { id, username, foto_perfil } = response.data;
         const usuarios = JSON.parse(localStorage.getItem("usuarios") || "{}");
         usuarios[id] = { username, foto_perfil };
-  
+
         setSessionData("usuarios", usuarios);
         setSessionData("currentUser", id);
-  
+
         message.success(`Bienvenido, ${username}`);
         onLogin({ id, username, foto_perfil });
-  
+
         window.location.reload();
       } else {
         throw new Error("Respuesta inesperada del servidor.");
@@ -75,7 +71,6 @@ const ChristmasAuth = ({ onLogin }) => {
       setLoading(false);
     }
   };
-  
 
   const commonStyles = {
     button: {

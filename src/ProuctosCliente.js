@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ConfigProvider, Card, Typography, Button, Space, Modal, InputNumber, message } from 'antd';
 import { ShoppingCartOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import PUERTO from './Config';
+import API_URL from './Config';
 
 const { Title, Paragraph } = Typography;
 
@@ -15,8 +15,8 @@ const ProductosCliente = () => {
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        const response = await axios.get(`${PUERTO}/productos`);
-        setProductos(response.data);
+        const response = await axios.get(`${API_URL}/productos`);
+        setProductos(response.data.rows || []);
       } catch (error) {
         console.error('Error al obtener los productos:', error);
         message.error('Error al cargar los productos.');
@@ -38,21 +38,21 @@ const ProductosCliente = () => {
 
   const calcularTotal = () => {
     if (!productoSeleccionado) return 0;
-    return productoSeleccionado.precio * cantidad;
+    return parseFloat(productoSeleccionado.precio) * cantidad;
   };
 
   const enviar = async () => {
     if (!productoSeleccionado) return;
     const currentUserId = localStorage.getItem('currentUser');
-      if (!currentUserId) {
-        message.warning('No hay un usuario logueado actualmente.');
-        return null;
-      }
-      const response = await axios.get(`${PUERTO}/carros/${currentUserId}`);
-      const id_carrito = response.data.map((carrito) => carrito.id_carrito);
-      const Carrito = id_carrito[0];
+    if (!currentUserId) {
+      message.warning('No hay un usuario logueado actualmente.');
+      return null;
+    }
 
     try {
+      const response = await axios.get(`${API_URL}/carros/${currentUserId}`);
+      const id_carrito = response.data.map((carrito) => carrito.id_carrito);
+      const Carrito = id_carrito[0];
 
       const data = {
         id_car: Carrito,
@@ -60,7 +60,7 @@ const ProductosCliente = () => {
         cantidad: cantidad,
       };
 
-      await axios.post(`${PUERTO}/proCar`, data);
+      await axios.post(`${API_URL}/proCar`, data);
 
       message.success('Producto agregado al carrito.');
       cerrarModal();
@@ -154,7 +154,7 @@ const ProductosCliente = () => {
                 {producto.descripcion}
               </Paragraph>
               <Paragraph style={{ marginBottom: '8px', color: '#333', fontWeight: 'bold' }}>
-                Precio: ${producto.precio}
+                Precio: ${parseFloat(producto.precio).toFixed(2)}
               </Paragraph>
               <Paragraph style={{ marginBottom: '8px', color: '#333', fontWeight: 'bold' }}>
                 Piezas disponibles: {producto.piezas}
@@ -190,7 +190,7 @@ const ProductosCliente = () => {
             <>
               <Title level={4}>{productoSeleccionado.nombre_producto}</Title>
               <Paragraph>
-                <strong>Precio Unitario:</strong> ${productoSeleccionado.precio.toFixed(2)}
+                <strong>Precio Unitario:</strong> ${parseFloat(productoSeleccionado.precio).toFixed(2)}
               </Paragraph>
               <Paragraph>
                 <strong>Cantidad:</strong>
@@ -198,7 +198,7 @@ const ProductosCliente = () => {
                   min={1}
                   max={productoSeleccionado.piezas}
                   value={cantidad}
-                  onChange={(value) => setCantidad(value)}
+                  onChange={(value) => setCantidad(value || 1)}
                   style={{ marginLeft: '10px' }}
                 />
               </Paragraph>
