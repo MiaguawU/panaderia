@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Productos from './Productos';
-import ProductosCliente from './ProuctosCliente';
+import ProductosCliente from './ProuctosCliente';  // Corregido el nombre del archivo
 import ProductoVista from './ProductosVista';
 import Agregar from './Agregar';
 import Actualizar from './Actualizar';
@@ -16,29 +16,38 @@ import axios from 'axios';
 import PUERTO from './Config';
 import Historial from './vistas/HistorialAdmin';
 
-const NavClienteSinSesion = () => (
-  <nav style={styles.nav}>
-    <Link to="/" style={styles.link}>Productos</Link>
-    <Link to="/acceder" style={styles.link}>Acceder</Link>
-  </nav>
-);
+const Nav = ({ userRole }) => {
+  const navLinks = {
+    clienteSinSesion: (
+      <>
+        <Link to="/" style={styles.link}>Productos</Link>
+        <Link to="/acceder" style={styles.link}>Acceder</Link>
+      </>
+    ),
+    administrador: (
+      <>
+        <Link to="/" style={styles.link}>Productos</Link>
+        <Link to="/users" style={styles.link}>Usuarios</Link>
+        <Link to="/perfil" style={styles.link}>Perfil</Link>
+      </>
+    ),
+    clienteConSesion: (
+      <>
+        <Link to="/" style={styles.link}>Productos</Link>
+        <Link to="/carrito" style={styles.link}>Carrito</Link>
+        <Link to="/historial" style={styles.link}>Historial de Compras</Link>
+        <Link to="/perfil" style={styles.link}>Perfil</Link>
+      </>
+    ),
+  };
 
-const NavAdministrador = () => (
-  <nav style={styles.nav}>
-    <Link to="/" style={styles.link}>Productos</Link>
-    <Link to="/users" style={styles.link}>Usuarios</Link>
-    <Link to="/perfil" style={styles.link}>Perfil</Link>
-  </nav>
-);
+  if (!userRole) return <nav style={styles.nav}>{navLinks.clienteSinSesion}</nav>;
 
-const NavClienteConSesion = () => (
-  <nav style={styles.nav}>
-    <Link to="/" style={styles.link}>Productos</Link>
-    <Link to="/carrito" style={styles.link}>Carrito</Link>
-    <Link to="/historial" style={styles.link}>Historial de Compras</Link>
-    <Link to="/perfil" style={styles.link}>Perfil</Link>
-  </nav>
-);
+  if (userRole === 1) return <nav style={styles.nav}>{navLinks.administrador}</nav>;
+
+  return <nav style={styles.nav}>{navLinks.clienteConSesion}</nav>;
+};
+
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -50,14 +59,14 @@ const App = () => {
         setCurrentUser(null);
         return;
       }
-
+  
       const response = await axios.get(`${PUERTO}/cliente/${currentUserId}`, {
         headers: { 'Content-Type': 'application/json' },
       });
-
-      if (response.data && response.data.length > 0) {
-        const userData = response.data[0];
-        setCurrentUser({ id: userData.id, id_rol: userData.id_rol });
+  
+      if (response.data && response.data.rows && response.data.rows.length > 0) {
+        const userData = response.data.rows[0];  // Acceder al primer elemento del array 'rows'
+        setCurrentUser({ id: userData.id_usuario, id_rol: userData.id_rol });  // Usar 'id_usuario' para el id
       } else {
         setCurrentUser(null);
       }
@@ -66,17 +75,11 @@ const App = () => {
       setCurrentUser(null);
     }
   };
+  
 
   useEffect(() => {
     obtenerDatosUsuario();
   }, []);
-
-  const renderNav = () => {
-    if (!currentUser) return <NavClienteSinSesion />;
-    if (currentUser.id_rol === 1) return <NavAdministrador />;
-    if (currentUser.id_rol === 2) return <NavClienteConSesion />;
-    return <NavClienteSinSesion />;
-  };
 
   const renderMainRoute = () => {
     if (!currentUser) return <ProductoVista />;
@@ -97,7 +100,7 @@ const App = () => {
             />
             <h1 style={styles.title}>Panadería de Chooper</h1>
           </div>
-          {renderNav()}
+          <Nav userRole={currentUser?.id_rol} />
         </header>
         <main style={styles.main}>
           <Routes>

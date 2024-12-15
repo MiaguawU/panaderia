@@ -17,8 +17,13 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
         return;
       }
       setLoading(true);
+
+      // Si la contraseña no está vacía, se la enviamos en la solicitud
+      const { password, ...userData } = values;
+      if (password === "") delete userData.password; // Eliminar la contraseña si no se quiere actualizar
+
       // Enviar solicitud al backend para actualizar el perfil
-      const response = await axios.put(`${PUERTO}/cliente/${currentUserId}`, values);
+      const response = await axios.put(`${PUERTO}/cliente/${currentUserId}`, userData);
 
       message.success("Perfil actualizado correctamente");
       onUpdate(response.data); // Notifica al componente padre del cambio
@@ -33,11 +38,16 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    // Restablecer los valores del formulario al cerrar
+  };
+
   return (
     <Modal
       title="Editar Perfil"
       visible={visible}
-      onCancel={onClose}
+      onCancel={handleClose}
       footer={null}
       centered
     >
@@ -45,6 +55,7 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
         layout="vertical"
         initialValues={{ username, email, foto_perfil, fondos }}
         onFinish={handleFinish}
+        onReset={() => onClose()} // Reset form on close
       >
         <Form.Item
           label="Nombre de Usuario"
@@ -57,8 +68,9 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
         <Form.Item
           label="Correo Electrónico"
           name="email"
+          rules={[{ type: "email", message: "Por favor, ingresa un correo electrónico válido" }]}
         >
-          <Input  />
+          <Input />
         </Form.Item>
 
         <Form.Item
@@ -74,16 +86,14 @@ const ModalEditProfile = ({ visible, onClose, user, onUpdate }) => {
         </Form.Item>
 
         <Form.Item
-        label="Contraseña"
-        name="password"
-        rules={[
-            { required: true, message: "Por favor, ingresa una contraseña" },
+          label="Contraseña"
+          name="password"
+          rules={[
             { min: 6, message: "La contraseña debe tener al menos 6 caracteres" },
-        ]}
+          ]}
         >
-        <Input.Password placeholder="Contraseña" autoComplete="current-password" />
+          <Input.Password placeholder="Contraseña" autoComplete="current-password" />
         </Form.Item>
-
 
         <Form.Item>
           <Button type="primary" htmlType="submit" block loading={loading}>

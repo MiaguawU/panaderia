@@ -4,7 +4,6 @@ import { EditOutlined, LogoutOutlined } from '@ant-design/icons';
 import ModalEditProfile from './editarPerfil';
 import axios from 'axios';
 import PUERTO from '../Config';
-import Password from 'antd/es/input/Password';
 
 const { Title, Text } = Typography;
 
@@ -31,16 +30,16 @@ const UserProfile = () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      if (response.data && response.data.length > 0) {
-        const userData = response.data[0];
+      if (response.data && response.data.rows && response.data.rows.length > 0) {
+        const userData = response.data.rows[0]; // Accede al primer objeto en 'rows'
         setCurrentUser({
-          id: userData.id,
+          id: userData.id_usuario,
           username: userData.nombre_usuario || "Nombre de Usuario",
-          email: userData.correo || "",
+          email: userData.correo || " ",
           foto_perfil: userData.imagen?.startsWith("http")
             ? userData.imagen
             : `${PUERTO}/${userData.imagen}`,
-          fondos: userData.fondos || 0,
+          fondos: userData.fondos || 0.00,
           password: userData.contrasena || 'pollo',
         });
         message.success("Datos del usuario obtenidos correctamente.");
@@ -95,7 +94,7 @@ const UserProfile = () => {
     username = "Nombre de Usuario",
     email = "usuario@example.com",
     foto_perfil = "https://via.placeholder.com/150",
-    fondos = 0,
+    fondos = 0.00,
   } = currentUser || {};
 
   return (
@@ -135,12 +134,11 @@ const UserProfile = () => {
           <Divider />
 
           <div style={{ marginBottom: '16px' }}>
-  <Text strong>Fondos:</Text>
-  <Text style={{ marginLeft: '8px' }}>
-    {Number.isFinite(Number(fondos)) ? Number(fondos).toFixed(2) : '0.00'}
-  </Text>
-</div>
-
+            <Text strong>Fondos:</Text>
+            <Text style={{ marginLeft: '8px' }}>
+              {Number.isFinite(Number(fondos)) ? Number(fondos).toFixed(2) : '0.00'}
+            </Text>
+          </div>
 
           <Divider />
 

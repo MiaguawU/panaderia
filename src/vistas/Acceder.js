@@ -1,4 +1,3 @@
-// ChristmasAuth.js
 import React, { useState } from "react";
 import { Button, Form, Input, Tabs, Typography, message } from "antd";
 import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
@@ -46,7 +45,7 @@ const ChristmasAuth = ({ onLogin }) => {
       setLoading(false);
     }
   };
-  
+
   const handleLogin = async (values) => {
     try {
       setLoading(true);
@@ -55,13 +54,14 @@ const ChristmasAuth = ({ onLogin }) => {
         const { id, username, foto_perfil } = response.data;
         const usuarios = JSON.parse(localStorage.getItem("usuarios") || "{}");
         usuarios[id] = { username, foto_perfil };
-  
+
         setSessionData("usuarios", usuarios);
         setSessionData("currentUser", id);
-  
+
         message.success(`Bienvenido, ${username}`);
         onLogin({ id, username, foto_perfil });
-  
+
+        // Aquí se podría considerar usar navegación de React Router en lugar de recargar la página
         window.location.reload();
       } else {
         throw new Error("Respuesta inesperada del servidor.");
@@ -75,7 +75,6 @@ const ChristmasAuth = ({ onLogin }) => {
       setLoading(false);
     }
   };
-  
 
   const commonStyles = {
     button: {

@@ -9,9 +9,7 @@ const handleError = (res, message, error = null) => {
 };
 
 // Obtener todos los usuarios
-// Obtener todos los usuarios
 router.get('/:id', (req, res) => {
-    // Limpiar las comillas del ID
     let { id } = req.params;
     id = id.replace(/^"|"$/g, ''); // Elimina las comillas al inicio y al final
 
@@ -25,9 +23,8 @@ router.get('/:id', (req, res) => {
     });
 });
 
-
-// Agregar un nuevo usuario
-router.post('/', (req, res) => {
+// Agregar un nuevo usuario y su carrito
+router.post('/', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -38,19 +35,35 @@ router.post('/', (req, res) => {
         INSERT INTO Usuarios (nombre_usuario, contrasena, id_rol, imagen, fondos)
         VALUES (?, ?, 2, 'https://i.pinimg.com/736x/ea/55/a7/ea55a756b236f936d4e9f2b8c356bdaf.jpg', 0)
     `;
+    
     const sql2 = `
         INSERT INTO carritos (id_usuario)
         VALUES (?)
     `;
-    db.query(sql, [username, password], (err, result) => {
-        if (err) return handleError(res, 'Error al agregar el usuario.', err);
-        const id_usuario = result.insertId;
-        db.query(sql2, [id_usuario], (err1, result1) => {
-            if (err1) return handleError(res, 'Error al agregar carrito.', err);
-            
+
+    try {
+        // Inserción del nuevo usuario
+        const result = await new Promise((resolve, reject) => {
+            db.query(sql, [username, password], (err, result) => {
+                if (err) reject(err);
+                resolve(result);
+            });
         });
-        res.status(201).json({ id: result.insertId });
-    });
+
+        const id_usuario = result.insertId;
+
+        // Inserción del carrito asociado al usuario
+        await new Promise((resolve, reject) => {
+            db.query(sql2, [id_usuario], (err1, result1) => {
+                if (err1) reject(err1);
+                resolve(result1);
+            });
+        });
+
+        res.status(201).json({ id: id_usuario, message: 'Usuario y carrito creados exitosamente.' });
+    } catch (err) {
+        handleError(res, 'Error al crear el usuario o el carrito.', err);
+    }
 });
 
 // Actualizar un usuario
@@ -61,23 +74,19 @@ router.put('/:id', (req, res) => {
     if (isNaN(id)) {
         return res.status(400).send('El ID debe ser un número válido.');
     }
-    console.log(id);
-    const { username, email, password,  foto_perfil, fondos } = req.body;
-    console.log(req.body)
 
-    if (!id || !username  || !password  || !foto_perfil|| fondos == null) {
+    const { username, email, password, foto_perfil, fondos } = req.body;
+
+    if (!id || !username || !password || !foto_perfil || fondos == null) {
         return res.status(400).send('Faltan datos requeridos.');
-    }
-    else if(!email){
-        correo=null;
     }
 
     const sql = `
         UPDATE Usuarios
-        SET nombre_usuario = ?, correo = ?, contrasena = ?,  imagen = ?, fondos = ?
+        SET nombre_usuario = ?, correo = ?, contrasena = ?, imagen = ?, fondos = ?
         WHERE id_usuario = ?
     `;
-    db.query(sql, [username, email, password,  foto_perfil, fondos, id], (err) => {
+    db.query(sql, [username, email, password, foto_perfil, fondos, id], (err) => {
         if (err) return handleError(res, 'Error al actualizar el usuario.', err);
         res.json({ message: 'Usuario actualizado correctamente.' });
     });
