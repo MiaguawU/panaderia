@@ -113,100 +113,111 @@ router.post('/', (req, res) => {
         return res.status(400).send('Los IDs deben ser números válidos.');
     }
 
-    // Iniciar transacción
-    db.beginTransaction(err => {
+    // Usar una conexión del pool
+    db.getConnection((err, connection) => {
         if (err) {
-            console.error("Error al iniciar la transacción:", err);
+            console.error("Error al obtener la conexión:", err);
             return res.status(500).send('Error al procesar la compra.');
         }
 
-        // Consultar productos del carrito
-        const sqlCarrito = `SELECT 
-        c.id_carrito_producto AS id,
-        p.nombre_producto AS producto,
-        c.cantidad AS cantidad,
-        p.precio AS precio,
-        c.id_producto
-      FROM Carrito_Productos c 
-      LEFT JOIN Producto p ON p.id_producto = c.id_producto 
-      WHERE c.id_carrito = ?;`;
-
-        db.query(sqlCarrito, [id_carrito], (err, carritoItems) => {
+        // Iniciar transacción
+        connection.beginTransaction(err => {
             if (err) {
-                db.rollback(() => {});
-                console.error("Error al obtener el carrito:", err);
+                connection.release();
+                console.error("Error al iniciar la transacción:", err);
                 return res.status(500).send('Error al procesar la compra.');
             }
 
-            // Calcular el total de la compra
-            const totalCompra = carritoItems.reduce((total, item) => total + item.cantidad * item.precio, 0);
+            // Consultar productos del carrito
+            const sqlCarrito = `
+                SELECT 
+                    c.id_carrito_producto AS id,
+                    p.nombre_producto AS producto,
+                    c.cantidad AS cantidad,
+                    p.precio AS precio,
+                    c.id_producto
+                FROM Carrito_Productos c 
+                LEFT JOIN Producto p ON p.id_producto = c.id_producto 
+                WHERE c.id_carrito = ?;`;
 
-            // Verificar fondos del usuario
-            const sqlUsuario = 'SELECT fondos FROM Usuarios WHERE id_usuario = ?';
-            db.query(sqlUsuario, [id_usuario], (err, results) => {
-                if (err || results.length === 0) {
-                    db.rollback(() => {});
-                    console.error("Error al verificar fondos del usuario:", err);
+            connection.query(sqlCarrito, [id_carrito], (err, carritoItems) => {
+                if (err) {
+                    connection.rollback(() => connection.release());
+                    console.error("Error al obtener el carrito:", err);
                     return res.status(500).send('Error al procesar la compra.');
                 }
 
-                const fondosUsuario = results[0].fondos;
-                if (fondosUsuario < totalCompra) {
-                    db.rollback(() => {});
-                    return res.status(400).send('Fondos insuficientes.');
-                }
+                // Calcular el total de la compra
+                const totalCompra = carritoItems.reduce((total, item) => total + item.cantidad * item.precio, 0);
 
-                // Actualizar fondos del usuario
-                const sqlActualizarFondos = 'UPDATE Usuarios SET fondos = fondos - ? WHERE id_usuario = ?';
-                db.query(sqlActualizarFondos, [totalCompra, id_usuario], (err) => {
-                    if (err) {
-                        db.rollback(() => {});
-                        console.error("Error al actualizar fondos del usuario:", err);
+                // Verificar fondos del usuario
+                const sqlUsuario = 'SELECT fondos FROM Usuarios WHERE id_usuario = ?';
+                connection.query(sqlUsuario, [id_usuario], (err, results) => {
+                    if (err || results.length === 0) {
+                        connection.rollback(() => connection.release());
+                        console.error("Error al verificar fondos del usuario:", err);
                         return res.status(500).send('Error al procesar la compra.');
                     }
 
-                    // Actualizar inventario de productos
-                    const updates = carritoItems.map(item => {
-                        return new Promise((resolve, reject) => {
-                            const sqlActualizarInventario = 'UPDATE Producto SET piezas = piezas - ? WHERE id_producto = ?';
-                            db.query(sqlActualizarInventario, [item.cantidad, item.id_producto], (err) => {
-                                if (err) {
-                                    reject(err);
-                                } else {
-                                    resolve();
-                                }
+                    const fondosUsuario = results[0].fondos;
+                    if (fondosUsuario < totalCompra) {
+                        connection.rollback(() => connection.release());
+                        return res.status(400).send('Fondos insuficientes.');
+                    }
+
+                    // Actualizar fondos del usuario
+                    const sqlActualizarFondos = 'UPDATE Usuarios SET fondos = fondos - ? WHERE id_usuario = ?';
+                    connection.query(sqlActualizarFondos, [totalCompra, id_usuario], (err) => {
+                        if (err) {
+                            connection.rollback(() => connection.release());
+                            console.error("Error al actualizar fondos del usuario:", err);
+                            return res.status(500).send('Error al procesar la compra.');
+                        }
+
+                        // Actualizar inventario de productos
+                        const updates = carritoItems.map(item => {
+                            return new Promise((resolve, reject) => {
+                                const sqlActualizarInventario = 'UPDATE Producto SET piezas = piezas - ? WHERE id_producto = ?';
+                                connection.query(sqlActualizarInventario, [item.cantidad, item.id_producto], (err) => {
+                                    if (err) {
+                                        reject(err);
+                                    } else {
+                                        resolve();
+                                    }
+                                });
                             });
                         });
-                    });
 
-                    Promise.all(updates)
-                        .then(() => {
-                            // Registrar la compra
-                            const sqlCrearCompra = 'CALL CrearCompra(?, ?, @id_compra);';
-                            db.query(sqlCrearCompra, [id_carrito, id_usuario], (err) => {
-                                if (err) {
-                                    db.rollback(() => {});
-                                    console.error("Error al registrar la compra:", err);
-                                    return res.status(500).send('Error al procesar la compra.');
-                                }
-
-                                // Finalizar la transacción
-                                db.commit(err => {
+                        Promise.all(updates)
+                            .then(() => {
+                                // Registrar la compra
+                                const sqlCrearCompra = 'CALL CrearCompra(?, ?, @id_compra);';
+                                connection.query(sqlCrearCompra, [id_carrito, id_usuario], (err) => {
                                     if (err) {
-                                        db.rollback(() => {});
-                                        console.error("Error al finalizar la transacción:", err);
+                                        connection.rollback(() => connection.release());
+                                        console.error("Error al registrar la compra:", err);
                                         return res.status(500).send('Error al procesar la compra.');
                                     }
 
-                                    res.status(201).json({ message: 'Compra registrada exitosamente.' });
+                                    // Finalizar la transacción
+                                    connection.commit(err => {
+                                        connection.release();
+                                        if (err) {
+                                            connection.rollback(() => connection.release());
+                                            console.error("Error al finalizar la transacción:", err);
+                                            return res.status(500).send('Error al procesar la compra.');
+                                        }
+
+                                        res.status(201).json({ message: 'Compra registrada exitosamente.' });
+                                    });
                                 });
+                            })
+                            .catch(err => {
+                                connection.rollback(() => connection.release());
+                                console.error("Error al actualizar el inventario:", err);
+                                return res.status(500).send('Error al procesar la compra.');
                             });
-                        })
-                        .catch(err => {
-                            db.rollback(() => {});
-                            console.error("Error al actualizar el inventario:", err);
-                            return res.status(500).send('Error al procesar la compra.');
-                        });
+                    });
                 });
             });
         });
