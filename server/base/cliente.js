@@ -15,7 +15,7 @@ router.get('/:id', (req, res) => {
 
     console.log("ID limpio:", id);
 
-    const sql = 'SELECT * FROM Usuarios WHERE id_usuario = ?';
+    const sql = 'SELECT * FROM Usuarios WHERE id_usuario = $1';
     db.query(sql, [id], (err, results) => {
         if (err) return handleError(res, 'Error al obtener los usuarios.', err);
         res.json(results);
@@ -33,11 +33,11 @@ router.post('/', (req, res) => {
 
     const sql = `
         INSERT INTO Usuarios (nombre_usuario, contrasena, id_rol, imagen, fondos)
-        VALUES (?, ?, 2, 'https://i.pinimg.com/736x/ea/55/a7/ea55a756b236f936d4e9f2b8c356bdaf.jpg', 0)
+        VALUES ($1, $2, $3, 'https://i.pinimg.com/736x/ea/55/a7/ea55a756b236f936d4e9f2b8c356bdaf.jpg', 0)
     `;
     const sql2 = `
         INSERT INTO carritos (id_usuario)
-        VALUES (?)
+        VALUES ($1)
     `;
 
     db.query(sql, [username, password], (err, result) => {
@@ -68,8 +68,8 @@ router.put('/:id', (req, res) => {
 
     const sql = `
         UPDATE Usuarios
-        SET nombre_usuario = ?, correo = ?, contrasena = ?, imagen = ?, fondos = ?
-        WHERE id_usuario = ?
+        SET nombre_usuario = $1, correo = $2, contrasena = $3, imagen = $4, fondos = $5
+        WHERE id_usuario = $6
     `;
 
     db.query(sql, [username, email || null, password, foto_perfil, fondos, id], (err) => {
@@ -86,7 +86,7 @@ router.delete('/:id', (req, res) => {
         return res.status(400).send('Faltan datos requeridos: id.');
     }
 
-    const sql = 'DELETE FROM Usuarios WHERE id_usuario = ?';
+    const sql = 'DELETE FROM Usuarios WHERE id_usuario = $1';
     db.query(sql, [id], (err) => {
         if (err) return handleError(res, 'Error al eliminar el usuario.', err);
         res.json({ message: 'Usuario eliminado correctamente.' });
