@@ -57,6 +57,7 @@ const Cart = () => {
         message.success("Compra realizada con éxito.");
         setCartItems([]);
         setTotal(0);
+        window.location.href = `/ticket`;
       } else {
         message.warning("No se pudo completar la compra.");
       }
