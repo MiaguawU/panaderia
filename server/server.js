@@ -51,7 +51,7 @@ app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 // Configuración de sesiones con MySQLStore
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "defaultSecret",
+    secret: process.env.CLIENT_SECRET || "defaultSecret",
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
@@ -74,7 +74,8 @@ app.get(
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
     if (!req.user) {
-      return res.redirect(`${BASE_URL}/error?message=Usuario no autenticado`);
+      console.error("Usuario no autenticado en Google OAuth callback");
+      return res.redirect(`${process.env.FRONTEND_URL}/error?message=Usuario no autenticado`);
     }
 
     const user = {
@@ -85,26 +86,34 @@ app.get(
       Cohabitantes: req.user.Cohabitantes || null,
     };
 
-    const token = jwt.sign(user, process.env.CLIENT_SECRET, { expiresIn: "1d" });
+    try {
+      const token = jwt.sign(user, process.env.CLIENT_SECRET, { expiresIn: "1d" });
 
-    res.cookie("auth_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-    });
+      res.cookie("auth_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      });
 
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+      res.redirect(`${process.env.FRONTEND_URL}`);
+    } catch (error) {
+      console.error("Error al generar el token JWT:", error);
+      res.redirect(`${process.env.FRONTEND_URL}/error?message=Error interno`);
+    }
   }
 );
 
 // Obtener datos del usuario autenticado
 app.get("/auth/me", (req, res) => {
   const token = req.cookies.auth_token;
-  if (!token) return res.status(401).json({ message: "No autenticado" });
+  if (!token) {
+    return res.status(401).json({ message: "No autenticado" });
+  }
 
   try {
     const user = jwt.verify(token, process.env.CLIENT_SECRET);
     res.json(user);
   } catch (err) {
+    console.error("Error al verificar el token JWT:", err);
     res.status(401).json({ message: "Token inválido" });
   }
 });
