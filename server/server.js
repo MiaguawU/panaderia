@@ -83,24 +83,21 @@ app.get(
       username: req.user.Nombre_Usuario,
       email: req.user.Email,
       foto_perfil: req.user.foto_perfil,
-      Cohabitantes: req.user.Cohabitantes || null,
     };
 
     try {
       const token = jwt.sign(user, process.env.CLIENT_SECRET, { expiresIn: "1d" });
 
-      res.cookie("auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-      });
-
-      res.redirect(`${process.env.FRONTEND_URL}`);
+      // Enviar datos del usuario en la redirección
+      const queryParams = new URLSearchParams(user).toString();
+      res.redirect(`${process.env.FRONTEND_URL}/google-success?${queryParams}`);
     } catch (error) {
       console.error("Error al generar el token JWT:", error);
       res.redirect(`${process.env.FRONTEND_URL}/error?message=Error interno`);
     }
   }
 );
+
 
 // Obtener datos del usuario autenticado
 app.get("/auth/me", (req, res) => {
