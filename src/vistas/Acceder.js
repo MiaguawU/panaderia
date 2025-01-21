@@ -25,7 +25,7 @@ const ChristmasAuth = ({ onLogin }) => {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${PUERTO}/auth/google/callback`, {
+      const response = await axios.get(`${PUERTO}/auth/google`, {
         withCredentials: true, // Permite que el navegador envíe cookies
       });
       

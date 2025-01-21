@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
+const cookieParser = require("cookie-parser");
 const passport = require("./base/auth");
 const usuario = require("./base/usuarios");
 const loginRouter = require("./base/login");
@@ -34,20 +35,16 @@ const dbOptions = {
 
 // Inicializa MySQLStore
 const sessionStore = new MySQLStore(dbOptions);
+sessionStore.on("error", (error) => {
+  console.error("Error en el almacenamiento de sesiones:", error);
+});
 
 // Inicializa el servidor Express
 const app = express();
-
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(morgan("dev"));
 app.use("/imagenes", express.static(path.join(__dirname, "imagenes")));
 
@@ -57,7 +54,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "defaultSecret",
     resave: false,
     saveUninitialized: false,
-    store: sessionStore, // Almacenamiento de sesiones en MySQL
+    store: sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
@@ -66,62 +63,51 @@ app.use(
   })
 );
 
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+app.use(passport.initialize());
+app.use(passport.session());
 
-const BASE_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+// Rutas de autenticación con Google
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// Ruta de callback después de la autenticación con Google
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    try {
-      // Datos del usuario autenticado
-      const user = {
-        id: req.user.Id_Usuario,
-        username: req.user.Nombre_Usuario,
-        email: req.user.Email,
-        foto_perfil: req.user.foto_perfil,
-        Cohabitantes: req.user.Cohabitantes || null,
-      };
-
-      // Crear un JWT (opcional, si no usas sesiones)
-      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1d" });
-
-      // Redirigir al front con el token en un header o en una cookie
-      res.cookie("auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-      });
-
-      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-    } catch (error) {
-      console.error("Error durante el callback de Google:", error);
-      res.redirect(`${process.env.FRONTEND_URL}/error?message=Error durante la autenticación`);
+    if (!req.user) {
+      return res.redirect(`${BASE_URL}/error?message=Usuario no autenticado`);
     }
+
+    const user = {
+      id: req.user.Id_Usuario,
+      username: req.user.Nombre_Usuario,
+      email: req.user.Email,
+      foto_perfil: req.user.foto_perfil,
+      Cohabitantes: req.user.Cohabitantes || null,
+    };
+
+    const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
   }
 );
 
+// Obtener datos del usuario autenticado
 app.get("/auth/me", (req, res) => {
-  const token = req.cookies.auth_token; // Leer el token desde las cookies
-  if (!token) {
-    return res.status(401).json({ message: "No autenticado" });
-  }
+  const token = req.cookies.auth_token;
+  if (!token) return res.status(401).json({ message: "No autenticado" });
 
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET);
-    res.json(user); // Devuelve los datos del usuario
+    res.json(user);
   } catch (err) {
     res.status(401).json({ message: "Token inválido" });
   }
 });
-
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Rutas de APIs
 app.use("/usuarios", usuario);
