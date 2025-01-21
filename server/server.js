@@ -85,7 +85,7 @@ app.get(
       Cohabitantes: req.user.Cohabitantes || null,
     };
 
-    const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign(user, process.env.SESSION_SECRET, { expiresIn: "1d" });
 
     res.cookie("auth_token", token, {
       httpOnly: true,
@@ -102,7 +102,7 @@ app.get("/auth/me", (req, res) => {
   if (!token) return res.status(401).json({ message: "No autenticado" });
 
   try {
-    const user = jwt.verify(token, process.env.JWT_SECRET);
+    const user = jwt.verify(token, process.env.SESSION_SECRET);
     res.json(user);
   } catch (err) {
     res.status(401).json({ message: "Token inválido" });

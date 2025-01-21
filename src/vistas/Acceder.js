@@ -22,34 +22,31 @@ const ChristmasAuth = ({ onLogin }) => {
     sessionStorage.removeItem(key);
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${PUERTO}/auth/google`, {
-        withCredentials: true, // Permite que el navegador envíe cookies
-      });
-      
-      if (response.data && response.data.user) {
-        const { id, username, foto_perfil } = response.data.user;
-        const usuarios = JSON.parse(localStorage.getItem("usuarios") || "{}");
-        usuarios[id] = { username, foto_perfil };
-  
-        setSessionData("usuarios", usuarios);
-        setSessionData("currentUser", id);
-  
-        message.success(`Bienvenido, ${username}`);
-        onLogin({ id, username, foto_perfil });
-  
-        window.location.reload();
-      } else {
-        throw new Error("No se pudo obtener datos del usuario.");
+  const storage = {
+    set: (key, value) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        sessionStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        console.error(`Error guardando ${key} en almacenamiento:`, err);
       }
-    } catch (error) {
-      console.error("Error durante el inicio de sesión con Google:", error);
-      message.error("No se pudo iniciar sesión con Google. Intente nuevamente.");
-    } finally {
-      setLoading(false);
-    }
+    },
+    get: (key) => {
+      try {
+        return JSON.parse(localStorage.getItem(key)) || JSON.parse(sessionStorage.getItem(key));
+      } catch (err) {
+        console.error(`Error obteniendo ${key} del almacenamiento:`, err);
+        return null;
+      }
+    },
+    remove: (key) => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    },
+  };
+  
+  const handleGoogleLogin = () => {
+    window.location.href = `${PUERTO}/auth/google`;
   };
   
 
