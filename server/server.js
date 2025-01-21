@@ -105,6 +105,20 @@ app.get(
   }
 );
 
+app.get("/auth/me", (req, res) => {
+  const token = req.cookies.auth_token; // Leer el token desde las cookies
+  if (!token) {
+    return res.status(401).json({ message: "No autenticado" });
+  }
+
+  try {
+    const user = jwt.verify(token, process.env.JWT_SECRET);
+    res.json(user); // Devuelve los datos del usuario
+  } catch (err) {
+    res.status(401).json({ message: "Token inválido" });
+  }
+});
+
 
 app.use(passport.initialize());
 app.use(passport.session());
