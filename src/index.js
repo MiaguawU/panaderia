@@ -4,7 +4,7 @@ import "./index.css";
 import App from "./App";
 import axios from "axios";
 import reportWebVitals from "./reportWebVitals";
-import PUERTO from './Config';
+import PUERTO from "./Config";
 
 // Funciones auxiliares para manejar almacenamiento
 const setSessionData = (key, value) => {
@@ -20,51 +20,32 @@ const getSessionData = (key) => {
   return localValue ? JSON.parse(localValue) : null;
 };
 
-// Extraer y procesar parámetros de la URL
-const queryParams = new URLSearchParams(window.location.search);
-const userData = {};
+// Obtener el usuario autenticado al cargar la aplicación
+const fetchCurrentUser = async () => {
+  try {
+    const response = await axios.get(`${PUERTO}/auth/me`, {
+      withCredentials: true, // Permite enviar cookies al servidor
+    });
 
-// Convertir parámetros de URL a un objeto
-queryParams.forEach((value, key) => {
-  userData[key] = decodeURIComponent(value);
-});
-
-// Procesar los datos de la URL
-if (Object.keys(userData).length > 0) {
-  (async () => {
-    try {
-      // Validar y limpiar el campo id
-      if (userData.id) {
-        userData.id = userData.id.trim(); // Elimina espacios innecesarios
-      }
-
-      const cleanedData = {
-        ...userData,
-        id: userData.id && userData.id.replace(/^"|"$/g, "") // Elimina comillas iniciales y finales
-      };
-
-      const response = await axios.post(`${PUERTO}/save`, cleanedData, {
-        headers: { "Content-Type": "application/json" },
-      });
-
-      console.log("Datos enviados al servidor:", response.data);
-
+    if (response.data && response.data.user) {
+      const { id, username, email, foto_perfil } = response.data.user;
       const usuarios = getSessionData("usuarios") || {};
-      const { id, username, email, imagen, fondos, message } = cleanedData;
 
-      if (id) {
-        usuarios[id] = { username, email, imagen, fondos, message };
-        setSessionData("usuarios", usuarios);
-        setSessionData("currentUser", id);
-        console.log("Datos guardados en almacenamiento local.");
-      } else {
-        console.warn("ID de usuario no proporcionado o inválido.");
-      }
-    } catch (error) {
-      console.error("Error al enviar los datos al servidor:", error);
+      usuarios[id] = { username, email, foto_perfil };
+      setSessionData("usuarios", usuarios);
+      setSessionData("currentUser", id);
+
+      console.log("Usuario autenticado cargado exitosamente.");
+    } else {
+      console.warn("No hay usuario autenticado.");
     }
-  })();
-}
+  } catch (error) {
+    console.error("Error al obtener el usuario autenticado:", error);
+  }
+};
+
+// Llamar a esta función antes de renderizar la aplicación
+fetchCurrentUser();
 
 const root = ReactDOM.createRoot(
   document.getElementById("root")

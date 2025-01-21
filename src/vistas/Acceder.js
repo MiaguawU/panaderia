@@ -22,9 +22,36 @@ const ChristmasAuth = ({ onLogin }) => {
     sessionStorage.removeItem(key);
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = `${PUERTO}/auth/google`;
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${PUERTO}/auth/google/callback`, {
+        withCredentials: true, // Permite que el navegador envíe cookies
+      });
+      
+      if (response.data && response.data.user) {
+        const { id, username, foto_perfil } = response.data.user;
+        const usuarios = JSON.parse(localStorage.getItem("usuarios") || "{}");
+        usuarios[id] = { username, foto_perfil };
+  
+        setSessionData("usuarios", usuarios);
+        setSessionData("currentUser", id);
+  
+        message.success(`Bienvenido, ${username}`);
+        onLogin({ id, username, foto_perfil });
+  
+        window.location.reload();
+      } else {
+        throw new Error("No se pudo obtener datos del usuario.");
+      }
+    } catch (error) {
+      console.error("Error durante el inicio de sesión con Google:", error);
+      message.error("No se pudo iniciar sesión con Google. Intente nuevamente.");
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   const handleRegister = async (values) => {
     try {

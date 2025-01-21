@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
+const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
@@ -87,25 +88,23 @@ app.get(
         Cohabitantes: req.user.Cohabitantes || null,
       };
 
-      // Serializar los datos del usuario como query string
-      const queryParams = new URLSearchParams({
-        id: user.id.toString(),
-        username: user.username,
-        email: user.email,
-        foto_perfil: user.foto_perfil,
-        Cohabitantes: user.Cohabitantes ? user.Cohabitantes.toString() : "",
-        message: "Sesión iniciada con éxito",
+      // Crear un JWT (opcional, si no usas sesiones)
+      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+      // Redirigir al front con el token en un header o en una cookie
+      res.cookie("auth_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
       });
 
-      // Redirigir al frontend con los datos
-      const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
-      res.redirect(`${frontendURL}/dashboard?${queryParams}`);
+      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     } catch (error) {
       console.error("Error durante el callback de Google:", error);
-      res.redirect(`${BASE_URL}/error?message=Error durante la autenticación`);
+      res.redirect(`${process.env.FRONTEND_URL}/error?message=Error durante la autenticación`);
     }
   }
 );
+
 
 app.use(passport.initialize());
 app.use(passport.session());
